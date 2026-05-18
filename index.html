@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Gift For You</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+
+  :root {
+    --green: #00ff41;
+    --red: #ff0033;
+    --cyan: #00ffff;
+    --amber: #ffaa00;
+    --dark: #000a00;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    cursor: default;
+    user-select: none;
+  }
+
+  /* ── SCANLINES ── */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg,
+      transparent, transparent 2px,
+      rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 4px);
+    pointer-events: none;
+    z-index: 9999;
+    animation: flicker 8s infinite;
+  }
+  @keyframes flicker {
+    0%,100%{opacity:1} 92%{opacity:1} 93%{opacity:.7} 94%{opacity:1} 96%{opacity:.85} 97%{opacity:1}
+  }
+
+  /* ── MATRIX CANVAS ── */
+  #matrix { position:fixed; inset:0; z-index:0; opacity:.35; }
+
+  /* ── PARTICLES ── */
+  #particles { position:fixed; inset:0; z-index:1; pointer-events:none; }
+
+  /* ── SCREEN GLITCH OVERLAY ── */
+  #glitch-overlay {
+    position:fixed; inset:0; z-index:500;
+    pointer-events:none; opacity:0;
+    background: linear-gradient(transparent 0%, rgba(255,0,50,0.06) 50%, transparent 100%);
+    mix-blend-mode: screen;
+  }
+
+  /* ════════════════════════════════
+     SCENE 1 — GIFT BOX
+  ════════════════════════════════ */
+  #scene-gift {
+    position:fixed; inset:0; z-index:100;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    opacity:0; transition:opacity 1.5s ease;
+  }
+  #scene-gift.visible { opacity:1; }
+
+  .gift-wrap {
+    position:relative;
+    animation: giftFloat 3s ease-in-out infinite, giftPulse 2s ease-in-out infinite;
+    cursor:pointer;
+    filter: drop-shadow(0 0 30px #ff6600) drop-shadow(0 0 60px #ff440088);
+    transition: filter .3s, transform .3s;
+  }
+  .gift-wrap:hover {
+    filter: drop-shadow(0 0 50px #ffaa00) drop-shadow(0 0 100px #ff880088);
+    transform: scale(1.08);
+  }
+  @keyframes giftFloat {
+    0%,100%{transform:translateY(0)} 50%{transform:translateY(-18px)}
+  }
+  @keyframes giftPulse {
+    0%,100%{filter:drop-shadow(0 0 30px #ff6600) drop-shadow(0 0 60px #ff440088)}
+    50%{filter:drop-shadow(0 0 55px #ffcc00) drop-shadow(0 0 110px #ff6600aa)}
+  }
+
+  .gift-svg { width:160px; height:160px; }
+
+  /* smoke particles around gift */
+  .smoke-particle {
+    position:absolute;
+    width:8px; height:8px;
+    border-radius:50%;
+    background: radial-gradient(circle, rgba(255,140,0,.6), transparent);
+    animation: smokeDrift 3s ease-out infinite;
+    pointer-events:none;
+  }
+  @keyframes smokeDrift {
+    0%{transform:translateY(0) scale(1);opacity:.7}
+    100%{transform:translateY(-80px) scale(3);opacity:0}
+  }
+
+  .gift-subtitle {
+    margin-top:28px;
+    text-align:center;
+    animation: textGlow 2s ease-in-out infinite;
+  }
+  .gift-subtitle .line1 {
+    font-family:'Orbitron',sans-serif;
+    font-size:clamp(18px,3vw,26px);
+    color:#ffcc44;
+    letter-spacing:.15em;
+    text-transform:uppercase;
+  }
+  .gift-subtitle .line2 {
+    margin-top:8px;
+    font-size:clamp(13px,2vw,16px);
+    color:rgba(255,204,68,.7);
+    letter-spacing:.3em;
+    animation: blink 1.4s step-end infinite;
+  }
+  @keyframes textGlow {
+    0%,100%{text-shadow:0 0 10px #ffcc44,0 0 20px #ff8800}
+    50%{text-shadow:0 0 20px #ffcc44,0 0 40px #ffaa00,0 0 60px #ff6600}
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+  /* ════════════════════════════════
+     SCENE 2 — HACK TERMINAL
+  ════════════════════════════════ */
+  #scene-hack {
+    position:fixed; inset:0; z-index:200;
+    opacity:0; pointer-events:none;
+    transition:opacity .8s;
+    background: #000a00;
+    display:flex; flex-direction:column;
+    overflow:hidden;
+  }
+  #scene-hack.active { opacity:1; pointer-events:auto; }
+
+  /* top status bar */
+  #hack-topbar {
+    background: rgba(255,0,30,.15);
+    border-bottom:1px solid rgba(255,0,30,.4);
+    padding:6px 16px;
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:11px; color:var(--red);
+    font-family:'Orbitron',sans-serif;
+    letter-spacing:.1em;
+  }
+  .tb-blink { animation: blink .6s step-end infinite; }
+  #hack-topbar .bar-right { color:var(--amber); }
+
+  /* grid layout */
+  #hack-grid {
+    flex:1; display:grid;
+    grid-template-columns:1fr 340px;
+    grid-template-rows:1fr 180px;
+    gap:6px; padding:6px;
+    overflow:hidden;
+  }
+  @media(max-width:700px){
+    #hack-grid{grid-template-columns:1fr;grid-template-rows:1fr 160px 140px;}
+    .hack-side{display:none!important;}
+  }
+
+  .hack-panel {
+    border:1px solid rgba(0,255,65,.25);
+    background:rgba(0,20,0,.7);
+    position:relative; overflow:hidden;
+    border-radius:2px;
+  }
+  .hack-panel::before {
+    content:attr(data-label);
+    position:absolute; top:0; left:0;
+    padding:2px 10px;
+    font-size:10px; color:var(--green);
+    background:rgba(0,255,65,.1);
+    border-right:1px solid rgba(0,255,65,.25);
+    border-bottom:1px solid rgba(0,255,65,.25);
+    font-family:'Orbitron',sans-serif;
+    letter-spacing:.12em;
+  }
+
+  /* terminal */
+  #terminal-output {
+    margin-top:22px; padding:8px 12px;
+    height:calc(100% - 22px);
+    overflow-y:auto; overflow-x:hidden;
+    font-size:clamp(11px,1.4vw,13px);
+    line-height:1.7;
+    scroll-behavior:smooth;
+  }
+  #terminal-output::-webkit-scrollbar{width:3px}
+  #terminal-output::-webkit-scrollbar-thumb{background:var(--green)}
+  .t-line { display:block; }
+  .t-green { color:var(--green); }
+  .t-red { color:var(--red); }
+  .t-cyan { color:var(--cyan); }
+  .t-amber { color:var(--amber); }
+  .t-gray { color:#555; }
+  .t-cursor { animation:blink .7s step-end infinite; }
+
+  /* progress bars */
+  .prog-container { margin:4px 0; }
+  .prog-label { font-size:11px; color:var(--amber); margin-bottom:2px; }
+  .prog-bar {
+    height:8px; background:rgba(255,255,255,.05);
+    border:1px solid rgba(0,255,65,.3);
+    border-radius:1px; overflow:hidden;
+  }
+  .prog-fill {
+    height:100%; width:0%;
+    background: linear-gradient(90deg, #003300, var(--green), #00ff00);
+    box-shadow:0 0 8px var(--green);
+    transition:width .1s linear;
+  }
+  .prog-fill.red {
+    background: linear-gradient(90deg, #330000, var(--red), #ff4444);
+    box-shadow:0 0 8px var(--red);
+  }
+
+  /* side panels */
+  .hack-side {
+    display:flex; flex-direction:column; gap:6px;
+    grid-row:1/3;
+  }
+  .mini-panel {
+    border:1px solid rgba(0,255,65,.2);
+    background:rgba(0,15,0,.6);
+    border-radius:2px; padding:8px;
+    font-size:11px;
+    position:relative; overflow:hidden;
+  }
+  .mini-panel .mp-title {
+    font-family:'Orbitron',sans-serif;
+    font-size:9px; letter-spacing:.15em;
+    color:var(--green); margin-bottom:8px;
+    border-bottom:1px solid rgba(0,255,65,.2);
+    padding-bottom:4px;
+  }
+  .fake-avatar {
+    width:50px; height:50px; border-radius:50%;
+    background: conic-gradient(#003300,#00ff41,#003300);
+    border:2px solid var(--green);
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; color:var(--green);
+    margin:0 auto 6px;
+    animation:spin 8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .profile-line { text-align:center; font-size:10px; }
+  .profile-line span { color:var(--amber); }
+  .fake-ip { color:var(--cyan); font-size:12px; font-weight:bold; }
+  .ip-row { display:flex; justify-content:space-between; margin:3px 0; }
+  .ip-row .label { color:#555; font-size:10px; }
+  .hex-stream {
+    font-size:9px; color:rgba(0,255,65,.5);
+    word-break:break-all; line-height:1.5;
+    height:80px; overflow:hidden;
+  }
+  .folder-row {
+    display:flex; align-items:center; gap:6px;
+    margin:3px 0; font-size:11px;
+    animation:folderSlide .4s ease;
+  }
+  @keyframes folderSlide{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+  .folder-icon { color:var(--amber); }
+  .folder-name { color:var(--cyan); }
+  .folder-size { color:#555; font-size:10px; margin-left:auto; }
+  .folder-status { font-size:9px; color:var(--red); }
+
+  /* bottom warning bar */
+  #warn-bar {
+    border:1px solid rgba(255,0,30,.5);
+    background:rgba(30,0,0,.8);
+    grid-column:1/2;
+    display:flex; align-items:center; justify-content:center;
+    flex-direction:column; gap:6px;
+    position:relative; overflow:hidden;
+  }
+  .warn-text {
+    font-family:'Orbitron',sans-serif;
+    font-size:clamp(14px,2.5vw,22px);
+    color:var(--red);
+    text-transform:uppercase;
+    letter-spacing:.2em;
+    animation:warnPulse 1s ease-in-out infinite;
+    text-shadow:0 0 20px var(--red);
+  }
+  @keyframes warnPulse{
+    0%,100%{opacity:1;transform:scale(1)}
+    50%{opacity:.6;transform:scale(.98)}
+  }
+  .warn-sub {
+    font-size:clamp(10px,1.5vw,13px);
+    color:rgba(255,0,50,.7);
+    letter-spacing:.3em;
+    animation: blink .8s step-end infinite;
+  }
+  .scan-line-anim {
+    position:absolute; top:0; left:-100%;
+    width:100%; height:2px;
+    background: linear-gradient(90deg,transparent,var(--red),transparent);
+    animation:scanMove 2s linear infinite;
+  }
+  @keyframes scanMove{to{left:200%}}
+
+  /* ════════════════════════════════
+     SCENE 3 — YOU ARE A FOOL
+  ════════════════════════════════ */
+  #scene-fool {
+    position:fixed; inset:0; z-index:300;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background:#000;
+    opacity:0; pointer-events:none;
+    transition:opacity .5s;
+  }
+  #scene-fool.active{opacity:1;pointer-events:auto;}
+
+  .fool-text {
+    font-family:'Orbitron',sans-serif;
+    font-size:clamp(32px,8vw,90px);
+    font-weight:900;
+    color:var(--red);
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    text-align:center;
+    animation:glitchText 1.5s infinite;
+    text-shadow:0 0 30px var(--red),0 0 60px #ff000088;
+    line-height:1.1;
+  }
+  .fool-sub {
+    font-family:'Orbitron',sans-serif;
+    font-size:clamp(18px,4vw,42px);
+    font-weight:700;
+    color:#ff4444;
+    letter-spacing:.2em;
+    text-align:center;
+    margin-top:16px;
+    animation:glitchText2 2s infinite;
+    text-shadow:0 0 20px #ff4444;
+  }
+  @keyframes glitchText {
+    0%,100%{clip-path:none;transform:none}
+    2%{clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%);transform:translateX(-4px)}
+    4%{clip-path:polygon(0 60%,100% 60%,100% 80%,0 80%);transform:translateX(4px)}
+    6%{clip-path:none;transform:skewX(2deg)}
+    8%{clip-path:none;transform:none}
+  }
+  @keyframes glitchText2 {
+    0%,100%{transform:none;opacity:1}
+    5%{transform:translateX(3px);opacity:.8}
+    10%{transform:translateX(-3px);opacity:1}
+    15%{transform:none}
+  }
+
+  /* ════════════════════════════════
+     SCENE 4 — REVEAL / PRANK END
+  ════════════════════════════════ */
+  #scene-reveal {
+    position:fixed; inset:0; z-index:400;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background: #050510;
+    opacity:0; pointer-events:none;
+    transition:opacity 1.5s;
+    text-align:center; padding:20px;
+  }
+  #scene-reveal.active{opacity:1;pointer-events:auto;}
+  .reveal-emoji { font-size:clamp(60px,12vw,100px); animation:bounce .6s infinite alternate; }
+  @keyframes bounce{to{transform:translateY(-10px)}}
+  .reveal-h1 {
+    font-family:'Orbitron',sans-serif;
+    font-size:clamp(26px,5vw,52px);
+    font-weight:900;
+    margin-top:20px;
+    background:linear-gradient(135deg,#7c3aed,#ec4899,#f97316);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .reveal-p {
+    font-size:clamp(14px,2.5vw,20px);
+    color:rgba(255,255,255,.7);
+    margin-top:12px;
+    max-width:420px;
+    line-height:1.6;
+  }
+  #btn-again {
+    margin-top:36px;
+    padding:14px 40px;
+    font-family:'Orbitron',sans-serif;
+    font-size:clamp(13px,2vw,16px);
+    font-weight:700;
+    letter-spacing:.15em;
+    background:linear-gradient(135deg,#7c3aed,#ec4899);
+    color:#fff;
+    border:none; border-radius:50px;
+    cursor:pointer;
+    box-shadow:0 0 30px rgba(124,58,237,.5);
+    transition:transform .2s,box-shadow .2s;
+    text-transform:uppercase;
+  }
+  #btn-again:hover{transform:scale(1.06);box-shadow:0 0 50px rgba(236,72,153,.7);}
+  #btn-again:active{transform:scale(.97);}
+
+  /* ── BURST PARTICLES ── */
+  .burst-dot {
+    position:fixed;
+    width:6px; height:6px;
+    border-radius:50%;
+    pointer-events:none;
+    z-index:600;
+  }
+
+  /* ── RED WARNING POPUP ── */
+  .warn-popup {
+    position:fixed; z-index:700;
+    border:1px solid var(--red);
+    background:rgba(20,0,0,.95);
+    padding:12px 16px;
+    font-size:11px; color:var(--red);
+    font-family:'Share Tech Mono',monospace;
+    box-shadow:0 0 20px rgba(255,0,30,.4);
+    pointer-events:none;
+    animation:popIn .3s ease, popOut .3s ease 2.5s forwards;
+    max-width:260px;
+  }
+  @keyframes popIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+  @keyframes popOut{to{opacity:0;transform:scale(.8)}}
+  .warn-popup .wp-title {
+    font-family:'Orbitron',sans-serif;
+    font-size:10px; color:var(--red);
+    margin-bottom:4px;
+    border-bottom:1px solid rgba(255,0,30,.3);
+    padding-bottom:4px;
+  }
+
+  /* ── DATA STREAM ── */
+  .data-stream {
+    position:fixed; top:0; z-index:250;
+    font-size:10px; color:rgba(0,255,65,.3);
+    pointer-events:none; white-space:nowrap;
+    font-family:'Share Tech Mono',monospace;
+    animation:streamFall linear infinite;
+  }
+  @keyframes streamFall{from{transform:translateY(-100%)}to{transform:translateY(110vh)}}
+
+  /* ── FLASH OVERLAY ── */
+  #flash {
+    position:fixed; inset:0; z-index:800;
+    background:#fff; opacity:0; pointer-events:none;
+    transition:opacity .05s;
+  }
+
+  /* ── CAMERA SHAKE ── */
+  .shake { animation:cameraShake .4s ease; }
+  @keyframes cameraShake{
+    0%,100%{transform:none}
+    10%{transform:translate(-6px,-4px) rotate(-.5deg)}
+    20%{transform:translate(6px,4px) rotate(.5deg)}
+    30%{transform:translate(-4px,6px) rotate(-.3deg)}
+    40%{transform:translate(4px,-6px) rotate(.3deg)}
+    50%{transform:translate(-6px,2px) rotate(-.5deg)}
+    60%{transform:translate(6px,-2px) rotate(.5deg)}
+    70%{transform:translate(-2px,6px)}
+    80%{transform:translate(2px,-4px)}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+<canvas id="particles"></canvas>
+<div id="glitch-overlay"></div>
+<div id="flash"></div>
+
+<!-- ══════════ SCENE 1: GIFT ══════════ -->
+<div id="scene-gift">
+  <div class="gift-wrap" id="gift-box">
+    <!-- smoke particles -->
+    <div class="smoke-particle" style="left:20%;top:10%;animation-delay:.0s;animation-duration:2.5s"></div>
+    <div class="smoke-particle" style="left:50%;top:5%;animation-delay:.4s;animation-duration:3s"></div>
+    <div class="smoke-particle" style="left:75%;top:15%;animation-delay:.8s;animation-duration:2s"></div>
+    <div class="smoke-particle" style="left:10%;top:50%;animation-delay:1.2s;animation-duration:2.8s"></div>
+    <div class="smoke-particle" style="left:85%;top:40%;animation-delay:.2s;animation-duration:3.2s"></div>
+
+    <svg class="gift-svg" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="boxGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ff8800" stop-opacity=".4"/>
+          <stop offset="100%" stop-color="transparent"/>
+        </radialGradient>
+        <linearGradient id="boxBody" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#cc2200"/>
+          <stop offset="100%" stop-color="#880000"/>
+        </linearGradient>
+        <linearGradient id="boxLid" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#ee3300"/>
+          <stop offset="100%" stop-color="#aa0000"/>
+        </linearGradient>
+      </defs>
+      <!-- glow -->
+      <ellipse cx="80" cy="145" rx="55" ry="10" fill="url(#boxGlow)"/>
+      <!-- body -->
+      <rect x="20" y="80" width="120" height="65" rx="3" fill="url(#boxBody)" stroke="#ff4400" stroke-width="1.5"/>
+      <!-- lid -->
+      <rect x="15" y="60" width="130" height="28" rx="3" fill="url(#boxLid)" stroke="#ff6600" stroke-width="1.5"/>
+      <!-- ribbon vertical -->
+      <rect x="72" y="60" width="16" height="85" fill="#ffcc00" opacity=".9"/>
+      <!-- ribbon horizontal on lid -->
+      <rect x="15" y="70" width="130" height="10" fill="#ffcc00" opacity=".9"/>
+      <!-- bow left loop -->
+      <ellipse cx="62" cy="52" rx="22" ry="14" fill="none" stroke="#ffcc00" stroke-width="8" transform="rotate(-25 62 52)"/>
+      <!-- bow right loop -->
+      <ellipse cx="98" cy="52" rx="22" ry="14" fill="none" stroke="#ffcc00" stroke-width="8" transform="rotate(25 98 52)"/>
+      <!-- bow center -->
+      <circle cx="80" cy="58" r="9" fill="#ffcc00"/>
+      <!-- sparkles -->
+      <g fill="#fff" opacity=".8">
+        <polygon points="140,30 142,36 148,38 142,40 140,46 138,40 132,38 138,36" transform="scale(.7) translate(65,-10)"/>
+        <polygon points="140,30 142,36 148,38 142,40 140,46 138,40 132,38 138,36" transform="scale(.4) translate(-50,20)"/>
+        <polygon points="140,30 142,36 148,38 142,40 140,46 138,40 132,38 138,36" transform="scale(.5) translate(120,30)"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="gift-subtitle">
+    <div class="line1">A Special Gift Awaits You</div>
+    <div class="line2">▶ Click to Open ◀</div>
+  </div>
+</div>
+
+<!-- ══════════ SCENE 2: HACK ══════════ -->
+<div id="scene-hack">
+  <div id="hack-topbar">
+    <span>
+      <span class="tb-blink">⬤</span>&nbsp;
+      THREAT LEVEL: <span style="color:#ff2200">CRITICAL</span> &nbsp;|&nbsp;
+      NODE: <span id="tb-node">0x4F3A2B</span>
+    </span>
+    <span class="bar-right" id="tb-time">00:00:00</span>
+  </div>
+
+  <div id="hack-grid">
+    <!-- Main terminal -->
+    <div class="hack-panel" data-label="TERMINAL // ROOT ACCESS">
+      <div id="terminal-output"></div>
+    </div>
+
+    <!-- Right side panels -->
+    <div class="hack-side">
+      <div class="mini-panel" style="flex:0 0 auto">
+        <div class="mp-title">TARGET PROFILE</div>
+        <div class="fake-avatar">👤</div>
+        <div class="profile-line">User: <span>LOCAL_MACHINE</span></div>
+        <div class="profile-line">OS: <span id="fake-os">Detecting...</span></div>
+        <div class="profile-line">IP: <span class="fake-ip" id="fake-ip">192.168.1.??</span></div>
+        <div class="profile-line">Status: <span style="color:var(--red);animation:blink .5s step-end infinite">COMPROMISED</span></div>
+      </div>
+
+      <div class="mini-panel" style="flex:0 0 auto">
+        <div class="mp-title">NETWORK TRACE</div>
+        <div id="ip-trace"></div>
+      </div>
+
+      <div class="mini-panel" style="flex:1;overflow:hidden">
+        <div class="mp-title">FILE EXTRACTION</div>
+        <div id="folder-list"></div>
+      </div>
+
+      <div class="mini-panel" style="flex:0 0 80px">
+        <div class="mp-title">HEX STREAM</div>
+        <div class="hex-stream" id="hex-display"></div>
+      </div>
+    </div>
+
+    <!-- Bottom warning bar -->
+    <div id="warn-bar" class="hack-panel">
+      <div class="scan-line-anim"></div>
+      <div class="warn-text" id="warn-main-text">UNAUTHORIZED ACCESS DETECTED</div>
+      <div class="warn-sub" id="warn-sub-text">SYSTEM BREACH IN PROGRESS</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SCENE 3: FOOL ══════════ -->
+<div id="scene-fool">
+  <div class="fool-text">YOU ARE A<br>FOOL</div>
+  <div class="fool-sub">NOW YOU ARE HACKED&nbsp;😈</div>
+</div>
+
+<!-- ══════════ SCENE 4: REVEAL ══════════ -->
+<div id="scene-reveal">
+  <div class="reveal-emoji">😂</div>
+  <div class="reveal-h1">Relax!</div>
+  <p class="reveal-p">This was only a <strong style="color:#ec4899">harmless prank</strong>.<br>
+  Nothing was hacked. No data was accessed.<br>Your device is completely safe. 😊</p>
+  <button id="btn-again" onclick="location.reload()">🔄 Try Again</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     AUTH OVERLAY — injected above existing content
+     z-index: 10000 (above scanlines at 9999)
+══════════════════════════════════════════════════ -->
+<link rel="stylesheet" href="auth-style.css">
+
+<!-- Welcome banner (shown post-login, outside overlay) -->
+<div id="welcome-banner"></div>
+
+<!-- Toast notification (outside overlay so it survives dismiss) -->
+<div id="auth-toast" role="alert">
+  <span id="toast-icon" class="toast-icon">ℹ</span>
+  <span id="toast-msg"></span>
+</div>
+
+<!-- ── FULLSCREEN AUTH OVERLAY ─────────────────────── -->
+<div id="auth-overlay" role="dialog" aria-modal="true" aria-label="Authentication">
+
+  <!-- Floating particles layer -->
+  <div id="auth-particles"></div>
+
+  <!-- ── AUTH CARD ───────────────────────────────────── -->
+  <div id="auth-card">
+
+    <!-- Logo / Header -->
+    <div class="auth-logo">
+      <div class="auth-logo-icon">⬡</div>
+      <div class="auth-title">
+        <span id="auth-typing-title" data-text="SECURE ACCESS"></span>
+      </div>
+      <div class="auth-subtitle">[ IDENTITY VERIFICATION REQUIRED ]</div>
+    </div>
+
+    <!-- Tab switcher -->
+    <div id="auth-tabs" class="auth-tabs" data-active="login">
+      <button class="tab-btn active" data-tab="login">Login</button>
+      <button class="tab-btn"        data-tab="signup">Sign Up</button>
+    </div>
+
+    <!-- ══════════════════════════════════
+         LOGIN FORM
+    ══════════════════════════════════ -->
+    <div id="login-form" class="auth-form active">
+
+      <!-- Username / Email -->
+      <div class="field-group">
+        <label class="field-label" for="login-identifier">Username or Email</label>
+        <div class="input-wrap">
+          <input id="login-identifier"
+                 class="auth-input"
+                 type="text"
+                 placeholder="enter username or email"
+                 autocomplete="username"
+                 spellcheck="false">
+        </div>
+        <span id="login-id-msg" class="field-msg"></span>
+      </div>
+
+      <!-- Password -->
+      <div class="field-group">
+        <label class="field-label" for="login-password">Password</label>
+        <div class="input-wrap">
+          <input id="login-password"
+                 class="auth-input has-icon"
+                 type="password"
+                 placeholder="enter password"
+                 autocomplete="current-password">
+          <button class="input-icon-btn" data-eye="login-password" title="Toggle visibility" type="button">👁</button>
+        </div>
+        <span id="login-pass-msg" class="field-msg"></span>
+      </div>
+
+      <!-- Remember me + Forgot password -->
+      <div class="login-extras">
+        <label class="check-row">
+          <span class="auth-checkbox">
+            <input type="checkbox" id="remember-me">
+          </span>
+          <span class="check-label">Remember me</span>
+        </label>
+        <a href="#" class="forgot-link" id="forgot-link">Forgot password?</a>
+      </div>
+
+      <!-- Login button -->
+      <button id="login-btn" class="auth-btn" type="button">
+        <span class="btn-inner">
+          <span class="btn-spinner"></span>
+          <span class="btn-text">AUTHENTICATE</span>
+        </span>
+      </button>
+
+    </div><!-- /login-form -->
+
+    <!-- ══════════════════════════════════
+         SIGN-UP FORM
+    ══════════════════════════════════ -->
+    <div id="signup-form" class="auth-form">
+
+      <!-- Full Name -->
+      <div class="field-group">
+        <label class="field-label" for="signup-name">Full Name</label>
+        <div class="input-wrap">
+          <input id="signup-name"
+                 class="auth-input"
+                 type="text"
+                 placeholder="your full name"
+                 autocomplete="name">
+        </div>
+        <span id="signup-name-msg" class="field-msg"></span>
+      </div>
+
+      <!-- Username -->
+      <div class="field-group">
+        <label class="field-label" for="signup-username">Username</label>
+        <div class="input-wrap">
+          <input id="signup-username"
+                 class="auth-input"
+                 type="text"
+                 placeholder="choose a username"
+                 autocomplete="username"
+                 spellcheck="false">
+        </div>
+        <span id="signup-user-msg" class="field-msg"></span>
+      </div>
+
+      <!-- Email -->
+      <div class="field-group">
+        <label class="field-label" for="signup-email">Email Address</label>
+        <div class="input-wrap">
+          <input id="signup-email"
+                 class="auth-input"
+                 type="email"
+                 placeholder="your@email.com"
+                 autocomplete="email">
+        </div>
+        <span id="signup-email-msg" class="field-msg"></span>
+      </div>
+
+      <!-- Password + strength -->
+      <div class="field-group">
+        <label class="field-label" for="signup-password">Password</label>
+        <div class="input-wrap">
+          <input id="signup-password"
+                 class="auth-input has-icon"
+                 type="password"
+                 placeholder="create a password"
+                 autocomplete="new-password">
+          <button class="input-icon-btn" data-eye="signup-password" title="Toggle visibility" type="button">👁</button>
+        </div>
+        <div class="strength-wrap">
+          <div class="strength-bar">
+            <div class="strength-fill" id="strength-fill"></div>
+          </div>
+          <span class="strength-label" id="strength-label"></span>
+        </div>
+        <span id="signup-pass-msg" class="field-msg"></span>
+      </div>
+
+      <!-- Confirm password -->
+      <div class="field-group">
+        <label class="field-label" for="signup-confirm">Confirm Password</label>
+        <div class="input-wrap">
+          <input id="signup-confirm"
+                 class="auth-input has-icon"
+                 type="password"
+                 placeholder="repeat your password"
+                 autocomplete="new-password">
+          <button class="input-icon-btn" data-eye="signup-confirm" title="Toggle visibility" type="button">👁</button>
+        </div>
+        <span id="signup-confirm-msg" class="field-msg"></span>
+      </div>
+
+      <!-- Terms checkbox -->
+      <label class="check-row">
+        <span class="auth-checkbox">
+          <input type="checkbox" id="signup-terms">
+        </span>
+        <span class="check-label">
+          I accept the <a href="#" onclick="return false">Terms of Service</a>
+        </span>
+      </label>
+      <span id="signup-terms-msg" class="field-msg"></span>
+
+      <!-- Signup button -->
+      <button id="signup-btn" class="auth-btn" type="button">
+        <span class="btn-inner">
+          <span class="btn-spinner"></span>
+          <span class="btn-text">CREATE ACCOUNT</span>
+        </span>
+      </button>
+
+    </div><!-- /signup-form -->
+
+    <!-- ══════════════════════════════════
+         FORGOT PASSWORD PANEL
+    ══════════════════════════════════ -->
+    <div id="forgot-panel">
+      <button class="back-link" id="back-to-login" type="button">← Back to Login</button>
+      <div class="field-group">
+        <label class="field-label" for="forgot-email">Registered Email</label>
+        <div class="input-wrap">
+          <input id="forgot-email"
+                 class="auth-input"
+                 type="email"
+                 placeholder="your@email.com">
+        </div>
+        <span id="forgot-msg" class="field-msg"></span>
+      </div>
+      <button id="forgot-btn" class="auth-btn" type="button">
+        <span class="btn-inner">
+          <span class="btn-spinner"></span>
+          <span class="btn-text">SEND RESET LINK</span>
+        </span>
+      </button>
+    </div><!-- /forgot-panel -->
+
+  </div><!-- /auth-card -->
+</div><!-- /auth-overlay -->
+
+<script src="auth-script.js"></script>
+
+<script>
+// ═══════════════════════════════════════
+//  AUDIO ENGINE (Web Audio API)
+// ═══════════════════════════════════════
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+let ambientGain, alarmInterval, streamIntervals=[];
+
+function resumeAC(){if(AC.state==='suspended')AC.resume();}
+
+function playTone(freq,type,dur,vol,delay=0,dest=null){
+  try{
+    resumeAC();
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.type=type; o.frequency.value=freq;
+    g.gain.setValueAtTime(0,AC.currentTime+delay);
+    g.gain.linearRampToValueAtTime(vol,AC.currentTime+delay+.02);
+    g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+delay+dur);
+    o.connect(g); g.connect(dest||AC.destination);
+    o.start(AC.currentTime+delay);
+    o.stop(AC.currentTime+delay+dur+.05);
+  }catch(e){}
+}
+
+function playNoise(dur,vol,delay=0){
+  try{
+    resumeAC();
+    const buf=AC.createBuffer(1,AC.sampleRate*dur,AC.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1);
+    const src=AC.createBufferSource();
+    const g=AC.createGain(); const f=AC.createBiquadFilter();
+    src.buffer=buf; f.type='bandpass'; f.frequency.value=800;
+    g.gain.setValueAtTime(0,AC.currentTime+delay);
+    g.gain.linearRampToValueAtTime(vol,AC.currentTime+delay+.05);
+    g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+delay+dur);
+    src.connect(f); f.connect(g); g.connect(AC.destination);
+    src.start(AC.currentTime+delay);
+  }catch(e){}
+}
+
+function startAmbient(){
+  try{
+    resumeAC();
+    const o1=AC.createOscillator(), o2=AC.createOscillator();
+    const lfo=AC.createOscillator();
+    ambientGain=AC.createGain();
+    const lfoGain=AC.createGain();
+    o1.type='sine'; o1.frequency.value=55;
+    o2.type='sine'; o2.frequency.value=58;
+    lfo.type='sine'; lfo.frequency.value=.3;
+    lfoGain.gain.value=8;
+    ambientGain.gain.value=.06;
+    lfo.connect(lfoGain); lfoGain.connect(o1.frequency);
+    o1.connect(ambientGain); o2.connect(ambientGain);
+    ambientGain.connect(AC.destination);
+    o1.start(); o2.start(); lfo.start();
+  }catch(e){}
+}
+
+function intensifyAmbient(){
+  if(!ambientGain) return;
+  try{
+    ambientGain.gain.linearRampToValueAtTime(.14,AC.currentTime+1);
+  }catch(e){}
+}
+
+function calmAmbient(){
+  if(!ambientGain) return;
+  try{
+    ambientGain.gain.linearRampToValueAtTime(.02,AC.currentTime+2);
+  }catch(e){}
+}
+
+function startAlarms(){
+  let i=0;
+  alarmInterval=setInterval(()=>{
+    const freqs=[880,660,1100,550];
+    playTone(freqs[i%freqs.length],'square',.12,.15);
+    playNoise(.08,.04,.13);
+    i++;
+  },600);
+}
+
+function stopAlarms(){
+  if(alarmInterval) clearInterval(alarmInterval);
+}
+
+function playClickSound(){
+  playTone(220,'square',.08,.12);
+  playTone(440,'square',.06,.08,.05);
+}
+
+function playExplosion(){
+  playNoise(.5,.4);
+  playTone(120,'sawtooth',.3,.2,.1);
+  playTone(60,'square',.5,.15,.2);
+}
+
+function playTyping(){
+  playTone(800+(Math.random()*400),'square',.03,.04);
+}
+
+function playGlitch(){
+  playNoise(.1,.25);
+  playTone(1200,'sawtooth',.05,.1,.05);
+}
+
+// ═══════════════════════════════════════
+//  MATRIX RAIN
+// ═══════════════════════════════════════
+(function(){
+  const c=document.getElementById('matrix');
+  const ctx=c.getContext('2d');
+  let w,h,drops;
+  const chars='アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF<>{}[]|=+-*&^%$#@!';
+  function init(){
+    w=c.width=window.innerWidth; h=c.height=window.innerHeight;
+    const cols=Math.floor(w/14);
+    drops=Array(cols).fill(1);
+  }
+  function draw(){
+    ctx.fillStyle='rgba(0,0,0,.05)';
+    ctx.fillRect(0,0,w,h);
+    ctx.fillStyle='#00ff41';
+    ctx.font='12px Share Tech Mono,monospace';
+    drops.forEach((y,i)=>{
+      const ch=chars[Math.floor(Math.random()*chars.length)];
+      ctx.fillStyle=y<3?'#ffffff':'#00ff41';
+      ctx.fillText(ch,i*14,y*14);
+      if(y*14>h&&Math.random()>.975) drops[i]=0;
+      drops[i]++;
+    });
+  }
+  init(); window.addEventListener('resize',init);
+  setInterval(draw,50);
+})();
+
+// ═══════════════════════════════════════
+//  PARTICLES CANVAS
+// ═══════════════════════════════════════
+(function(){
+  const c=document.getElementById('particles');
+  const ctx=c.getContext('2d');
+  let pts=[];
+  function init(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  function addBurst(x,y,count,col){
+    for(let i=0;i<count;i++){
+      const a=Math.random()*Math.PI*2,s=1+Math.random()*6;
+      pts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,col:col||`hsl(${30+Math.random()*30},100%,60%)`});
+    }
+  }
+  window.addBurst=addBurst;
+  function frame(){
+    ctx.clearRect(0,0,c.width,c.height);
+    pts=pts.filter(p=>p.life>0);
+    pts.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      p.vy+=.12; p.vx*=.98; p.life-=.018;
+      ctx.globalAlpha=p.life;
+      ctx.fillStyle=p.col;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,3,0,Math.PI*2);
+      ctx.fill();
+    });
+    ctx.globalAlpha=1;
+    requestAnimationFrame(frame);
+  }
+  init(); window.addEventListener('resize',init); frame();
+})();
+
+// ═══════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════
+const $ = id => document.getElementById(id);
+const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const randHex=(n)=>Array.from({length:n},()=>rand(0,255).toString(16).padStart(2,'0')).join(' ');
+const randIP=()=>`${rand(1,254)}.${rand(0,255)}.${rand(0,255)}.${rand(0,255)}`;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function flash(col='#fff',dur=80){
+  const f=$('flash');
+  f.style.background=col; f.style.opacity='1';
+  setTimeout(()=>f.style.opacity='0',dur);
+}
+
+function shake(){
+  document.body.classList.remove('shake');
+  void document.body.offsetWidth;
+  document.body.classList.add('shake');
+  setTimeout(()=>document.body.classList.remove('shake'),500);
+}
+
+function glitchOverlay(dur=300){
+  const el=$('glitch-overlay');
+  el.style.opacity='1';
+  setTimeout(()=>el.style.opacity='0',dur);
+}
+
+function showWarnPopup(title,msg,x,y){
+  const d=document.createElement('div');
+  d.className='warn-popup';
+  d.style.left=x+'px'; d.style.top=y+'px';
+  d.innerHTML=`<div class="wp-title">⚠ ${title}</div>${msg}`;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),2900);
+}
+
+// ═══════════════════════════════════════
+//  TICKING CLOCK IN TOPBAR
+// ═══════════════════════════════════════
+let hackStartTime;
+function startClock(){
+  hackStartTime=Date.now();
+  setInterval(()=>{
+    const e=Math.floor((Date.now()-hackStartTime)/1000);
+    const h=String(Math.floor(e/3600)).padStart(2,'0');
+    const m=String(Math.floor((e%3600)/60)).padStart(2,'0');
+    const s=String(e%60).padStart(2,'0');
+    $('tb-time').textContent=`${h}:${m}:${s}`;
+    $('tb-node').textContent='0x'+rand(0,0xFFFFFF).toString(16).toUpperCase().padStart(6,'0');
+  },1000);
+}
+
+// ═══════════════════════════════════════
+//  TERMINAL TYPER
+// ═══════════════════════════════════════
+const out=$('terminal-output');
+let termQueue=[], termRunning=false;
+
+async function typeToTerminal(text, cls='t-green', ms=18){
+  return new Promise(resolve=>{
+    const span=document.createElement('span');
+    span.className='t-line '+cls;
+    out.appendChild(span);
+    let i=0;
+    const iv=setInterval(()=>{
+      if(i<text.length){
+        span.textContent=text.slice(0,++i);
+        playTyping();
+        out.scrollTop=out.scrollHeight;
+      } else {
+        out.appendChild(document.createElement('br'));
+        clearInterval(iv); resolve();
+      }
+    },ms);
+  });
+}
+
+async function termLog(text,cls,ms){
+  await typeToTerminal(text,cls,ms||12);
+}
+
+function addProgressBar(label, col){
+  const wrap=document.createElement('div');
+  wrap.className='prog-container';
+  wrap.innerHTML=`<div class="prog-label">${label}</div><div class="prog-bar"><div class="prog-fill${col?' '+col:''}" id="pf_${label.replace(/\W/g,'_')}"></div></div>`;
+  out.appendChild(wrap);
+  out.scrollTop=out.scrollHeight;
+  return document.getElementById(`pf_${label.replace(/\W/g,'_')}`);
+}
+
+async function animateBar(bar, targetPct, durationMs){
+  return new Promise(resolve=>{
+    const steps=60, interval=durationMs/steps, inc=targetPct/steps;
+    let cur=0, iv=setInterval(()=>{
+      cur=Math.min(cur+inc,targetPct);
+      bar.style.width=cur+'%';
+      if(cur>=targetPct){clearInterval(iv);resolve();}
+    },interval);
+  });
+}
+
+// ═══════════════════════════════════════
+//  HEX STREAM
+// ═══════════════════════════════════════
+function startHexStream(){
+  const el=$('hex-display');
+  streamIntervals.push(setInterval(()=>{
+    el.textContent=Array.from({length:12},()=>randHex(8)).join('\n');
+  },120));
+}
+
+// ═══════════════════════════════════════
+//  DATA STREAM COLUMNS
+// ═══════════════════════════════════════
+function launchDataStreams(){
+  for(let i=0;i<8;i++){
+    const d=document.createElement('div');
+    d.className='data-stream';
+    d.style.left=(5+i*12)+'%';
+    d.style.animationDuration=(3+Math.random()*4)+'s';
+    d.style.animationDelay=(Math.random()*3)+'s';
+    d.textContent=Array.from({length:40},()=>rand(0,9)).join('');
+    document.body.appendChild(d);
+    streamIntervals.push(setInterval(()=>{
+      d.textContent=Array.from({length:40},()=>rand(0,9)).join('');
+    },200));
+  }
+}
+
+// ═══════════════════════════════════════
+//  IP TRACE
+// ═══════════════════════════════════════
+function startIPTrace(){
+  const c=$('ip-trace');
+  const ips=[randIP(),randIP(),randIP(),'TARGET'];
+  let idx=0;
+  function addRow(){
+    if(idx>=ips.length)return;
+    const d=document.createElement('div');
+    d.className='ip-row';
+    d.innerHTML=`<span class="label">${idx===0?'SOURCE':idx===ips.length-1?'TARGET':'HOP '+idx}</span><span class="fake-ip">${ips[idx]==='TARGET'?randIP():ips[idx]}</span>`;
+    c.appendChild(d); idx++;
+    if(idx<ips.length) setTimeout(addRow,800);
+  }
+  addRow();
+}
+
+// ═══════════════════════════════════════
+//  FAKE IP / OS
+// ═══════════════════════════════════════
+function animateIP(){
+  const el=$('fake-ip');
+  let n=0;
+  const iv=setInterval(()=>{
+    el.textContent=randIP();
+    if(++n>12){clearInterval(iv); el.textContent=randIP();}
+  },150);
+}
+
+function detectFakeOS(){
+  const el=$('fake-os');
+  const oses=['Windows 11','Ubuntu 22','macOS 14','Android 14'];
+  el.textContent=oses[rand(0,oses.length-1)];
+}
+
+// ═══════════════════════════════════════
+//  FOLDER EXTRACTION
+// ═══════════════════════════════════════
+const folders=[
+  {n:'Documents',s:'2.3 GB'},{n:'passwords.txt',s:'12 KB'},
+  {n:'bank_details',s:'842 KB'},{n:'Photos',s:'5.1 GB'},
+  {n:'.ssh/keys',s:'4 KB'},{n:'browsing_history',s:'320 KB'},
+];
+function startFolderExtraction(){
+  const c=$('folder-list');
+  let i=0;
+  function addFolder(){
+    if(i>=folders.length)return;
+    const f=folders[i];
+    const d=document.createElement('div');
+    d.className='folder-row';
+    d.innerHTML=`<span class="folder-icon">📁</span>
+      <span class="folder-name">${f.n}</span>
+      <span class="folder-size">${f.s}</span>
+      <span class="folder-status">COPIED</span>`;
+    c.appendChild(d); i++;
+    if(i<folders.length) setTimeout(addFolder,900);
+  }
+  addFolder();
+}
+
+// ═══════════════════════════════════════
+//  RANDOM WARNING POPUPS
+// ═══════════════════════════════════════
+function schedulePopups(){
+  const msgs=[
+    ['FIREWALL BREACHED','All inbound rules disabled. Root access granted.'],
+    ['KEYLOGGER ACTIVE','Recording all keystrokes...'],
+    ['WEBCAM ACCESSED','Initiating visual capture stream...'],
+    ['PASSWORD DUMP','3,847 credentials extracted.'],
+  ];
+  msgs.forEach((m,i)=>{
+    streamIntervals.push(setTimeout(()=>{
+      showWarnPopup(m[0],m[1],rand(50,window.innerWidth-280),rand(80,window.innerHeight-160));
+      playGlitch();
+      flash('#ff000022',150);
+      shake();
+    },3000+i*2500));
+  });
+}
+
+// ═══════════════════════════════════════
+//  CYCLING WARN BAR TEXT
+// ═══════════════════════════════════════
+function cycleWarnText(){
+  const main=['UNAUTHORIZED ACCESS DETECTED','SYSTEM BREACH IN PROGRESS','DEVICE COMPROMISED','CRITICAL SECURITY FAILURE'];
+  const sub=['SYSTEM BREACH IN PROGRESS','ALL DEFENSES DISABLED','DATA EXFILTRATION ACTIVE','EMERGENCY ALERT'];
+  let i=0;
+  streamIntervals.push(setInterval(()=>{
+    $('warn-main-text').textContent=main[i%main.length];
+    $('warn-sub-text').textContent=sub[i%sub.length];
+    i++;
+  },1800));
+}
+
+// ═══════════════════════════════════════
+//  MAIN HACK SEQUENCE
+// ═══════════════════════════════════════
+async function runHackSequence(){
+  const scene=$('scene-hack');
+  scene.classList.add('active');
+  startClock(); intensifyAmbient(); startAlarms();
+  startHexStream(); launchDataStreams(); startIPTrace();
+  animateIP(); detectFakeOS(); startFolderExtraction();
+  schedulePopups(); cycleWarnText();
+
+  // terminal script
+  await sleep(300);
+  await termLog('$ sudo exploit --target=localhost --mode=silent','t-green',8);
+  await sleep(200);
+  await termLog('[*] Connecting to secure servers...','t-amber');
+  await sleep(400);
+  await termLog(`[+] Remote node: ${randIP()} — ONLINE`,'t-cyan');
+  await termLog('[*] Establishing encrypted tunnel...','t-amber');
+  await sleep(300);
+  await termLog('[+] TLS handshake complete. Cipher: AES-256-GCM','t-cyan');
+
+  const b1=addProgressBar('CONNECTION',null);
+  await animateBar(b1,100,800); await sleep(100);
+
+  await termLog('[*] Scanning open ports...','t-amber');
+  await termLog(`[+] Open: 22/SSH  80/HTTP  443/HTTPS  3306/MySQL  8080/PROXY`,'t-cyan');
+  await sleep(200);
+  await termLog('[!] WARNING: Bypassing firewall...','t-red');
+  const b2=addProgressBar('FIREWALL_BYPASS','red');
+  await animateBar(b2,100,900);
+  await termLog('[+] Firewall disabled. No restrictions active.','t-green');
+
+  await sleep(200);
+  await termLog('[*] Injecting payload into kernel...','t-amber');
+  playGlitch(); glitchOverlay(400);
+  const b3=addProgressBar('PAYLOAD_INJECTION','red');
+  await animateBar(b3,100,1100);
+  await termLog('[+] Payload injected. Ring-0 access confirmed.','t-green');
+
+  await sleep(300);
+  await termLog('[*] Decrypting local password vault...','t-amber');
+  for(let i=0;i<5;i++){
+    await termLog(`    ${rand(0,9999).toString().padStart(4,'0')} > ${randHex(6)} → CRACKED`,'t-cyan',8);
+    await sleep(80);
+  }
+  const b4=addProgressBar('PASSWORD_DECRYPT','red');
+  await animateBar(b4,100,700);
+  await termLog('[+] 3,847 credentials decrypted successfully.','t-green');
+
+  await sleep(200);
+  await termLog('[*] Downloading secret files...','t-amber');
+  for(let i=0;i<4;i++){
+    const pct=rand(20,100);
+    await termLog(`    [${i+1}/4] transferring... (${pct}% complete)`,'t-gray',6);
+    await sleep(150);
+  }
+  const b5=addProgressBar('FILE_DOWNLOAD','red');
+  await animateBar(b5,100,1200);
+  await termLog('[+] Transfer complete. 47 GB exfiltrated.','t-green');
+
+  await sleep(300);
+  await termLog('[!] Initiating remote wipe of system logs...','t-red');
+  playGlitch(); flash('#ff000033',200); shake();
+  await termLog('[*] Covering tracks...','t-amber');
+  const b6=addProgressBar('COVERING_TRACKS',null);
+  await animateBar(b6,100,600);
+
+  await sleep(200);
+  await termLog('','');
+  await termLog('╔══════════════════════════════════════╗','t-red',5);
+  await termLog('║      A C C E S S   G R A N T E D     ║','t-red',5);
+  await termLog('╚══════════════════════════════════════╝','t-red',5);
+  await termLog('','');
+  await termLog('[+] DEVICE FULLY COMPROMISED.','t-red');
+  await termLog('[+] System owner has been notified: NO','t-green');
+  await termLog('[+] Evidence deleted: YES','t-green');
+  await termLog('[+] Mission complete. Exiting...','t-amber');
+  await sleep(400);
+  await termLog('$ _','t-cursor');
+
+  // wait then show fool screen
+  await sleep(2200);
+  showFoolScreen();
+}
+
+// ═══════════════════════════════════════
+//  SCENE 3 — FOOL
+// ═══════════════════════════════════════
+function showFoolScreen(){
+  stopAlarms(); clearAllStreams();
+  flash('#ff0000',300);
+  playNoise(.3,.5); shake(); glitchOverlay(600);
+
+  setTimeout(()=>{
+    $('scene-hack').classList.remove('active');
+    $('scene-fool').classList.add('active');
+    playGlitch();
+    setTimeout(()=>{ flash('#ffffff',200); shake(); },300);
+    setTimeout(showReveal, 4000);
+  },400);
+}
+
+// ═══════════════════════════════════════
+//  SCENE 4 — REVEAL
+// ═══════════════════════════════════════
+function showReveal(){
+  $('scene-fool').classList.remove('active');
+  setTimeout(()=>{
+    $('scene-reveal').classList.add('active');
+    calmAmbient();
+    playTone(440,'sine',.3,.08);
+    playTone(550,'sine',.3,.08,.15);
+    playTone(660,'sine',.5,.08,.3);
+  },300);
+}
+
+// ═══════════════════════════════════════
+//  CLEANUP HELPERS
+// ═══════════════════════════════════════
+function clearAllStreams(){
+  streamIntervals.forEach(id=>{
+    clearInterval(id); clearTimeout(id);
+  });
+  streamIntervals=[];
+  document.querySelectorAll('.data-stream').forEach(el=>el.remove());
+  document.querySelectorAll('.warn-popup').forEach(el=>el.remove());
+}
+
+// ═══════════════════════════════════════
+//  SUBTLE TICK WHILE ON GIFT SCREEN
+// ═══════════════════════════════════════
+let tickInterval;
+function startTick(){
+  tickInterval=setInterval(()=>{
+    playTone(800,'square',.04,.04);
+  },1200);
+}
+
+// ═══════════════════════════════════════
+//  GIFT BOX CLICK
+// ═══════════════════════════════════════
+$('gift-box').addEventListener('click',function(){
+  resumeAC();
+  clearInterval(tickInterval);
+  playClickSound();
+  startAmbient();
+
+  // burst particles at box center
+  const r=this.getBoundingClientRect();
+  const cx=r.left+r.width/2, cy=r.top+r.height/2;
+  addBurst(cx,cy,80,'#ffaa00');
+  addBurst(cx,cy,40,'#ff4400');
+  addBurst(cx,cy,30,'#ffffff');
+
+  playExplosion();
+  flash('#ffffff',150);
+  shake();
+  glitchOverlay(500);
+
+  setTimeout(()=>{
+    flash('#ff880055',100);
+    addBurst(cx,cy,60,'#ff6600');
+  },200);
+
+  // fade out gift scene
+  $('scene-gift').style.opacity='0';
+  $('scene-gift').style.pointerEvents='none';
+
+  // start hack after brief pause
+  setTimeout(runHackSequence, 600);
+});
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    $('scene-gift').classList.add('visible');
+    startTick();
+  }, 600);
+});
+
+// ═══════════════════════════════════════
+//  TICKING SOUND ON HOVER
+// ═══════════════════════════════════════
+$('gift-box').addEventListener('mouseenter',()=>{
+  resumeAC();
+  playTone(600,'square',.05,.06);
+});
+</script>
+</body>
+</html>

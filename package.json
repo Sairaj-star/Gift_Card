@@ -1,0 +1,14 @@
+{
+  "name": "auth-overlay-server",
+  "version": "1.0.0",
+  "description": "Login/Signup overlay system with Express backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.18.2"
+  }
+}
